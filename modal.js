@@ -30,6 +30,7 @@ window.onload = function() {
     const errorList = [];
     document.getElementById('comments-retrieved-state').innerText = 'Loading';
     document.getElementById('comments-parsed-state').innerText = 'No';
+    document.getElementById('comments-processed-state').innerText = 'Outdated';
     document.getElementById('comments-processed-refresh').style.display = 'none';
     
     chrome.runtime.sendMessage({
@@ -63,7 +64,7 @@ window.onload = function() {
               action: "sendParsedCommentContentToModal",
               content: {
                 username,
-                parsedComments: response,
+                parsedComments: response.comments,
                 errorList
               }
             });
@@ -77,6 +78,7 @@ window.onload = function() {
 
   commentsProcessed.onclick = () => {
     document.getElementById('comments-processed-state').innerText = 'Loading';
+    document.getElementById('comments-processed-refresh').style.display = 'none';
 
     chrome.runtime.sendMessage({
       action: "performLlmApiCall",
@@ -86,6 +88,7 @@ window.onload = function() {
       }
     }, (response) => {
       if (response?.success) {
+        document.getElementById('comments-processed-refresh').style.display = 'block';
         if (response.data.error) {
           console.log('API call response', response.data);
           document.getElementById('comments-processed-state').innerText = 'Error';
@@ -106,18 +109,21 @@ chrome.runtime.onMessage.addListener((data, sender) => {
   if (data && data.type === 'SET_RAW_COMMENTS') {
     rawComments = JSON.stringify(data.content.rawComments, null, 2);
     username = data.content.username;
+    document.getElementById('comments-processed-refresh').style.display = 'none';
     document.getElementById('comments-retrieved-state').innerText = 'Yes';
     document.getElementById('comments-parsed-state').innerText = 'Loading';
     return true;
   }
 
   if (data && data.type === 'SET_PARSED_COMMENTS') {
-    console.log('receieve SET_PARSED_COMMENTS');
     parsedComments = data.content.parsedComments;
     username = data.content.username;
-    document.getElementById('comments-parsed-state').innerText = 'Yes';
+    document.getElementById('comments-parsed-section').innerText = 'Comments Parsed: ' + parsedComments.length;
     document.getElementById('parsed-comments-debug').innerText = JSON.stringify(parsedComments, null, 2);
-    document.getElementById('comments-processed-refresh').style.display = 'block';
+    if (parsedComments.length > 1) {
+      document.getElementById('comments-processed-refresh').style.display = 'block';
+      document.getElementById('comments-parsed-state').innerText = 'Yes';
+    }
     return true;
   }
   return false;

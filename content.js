@@ -68,7 +68,7 @@ const onLlmButtonClick = (username) => {
   // };
   const errorList = [];
 
-  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=800,height=600');
+  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=1200,height=800');
   chrome.runtime.sendMessage({
     action: "fetchRedditUserData",
     username: username
@@ -95,13 +95,12 @@ const onLlmButtonClick = (username) => {
         }
       });
 
-      const totalRequested = 5;
+      const totalRequested = -1;
       chrome.runtime.sendMessage(
         { action: "parseCommentsForLlm", rawComments: jsonComments, maxComments: totalRequested },
         (response) => {
           updateJsonScriptTag(username, response.comments, 'parsedForLlm');
 
-          console.log('send sendParsedCommentContentToModal');
           chrome.runtime.sendMessage({
             action: "sendParsedCommentContentToModal",
             content: {

@@ -35,7 +35,7 @@ const parseCommentsForLlm = (rawCommentsData, mapperKeys, maxComments) => {
   let totalProcessed = 0;
 
   for (let i = 0; i < comments.length; i++) {
-    if (maxComments && i >= maxComments) {
+    if (maxComments && i >= maxComments && maxComments > 0) {
       break;
     }
 
@@ -89,7 +89,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "parseCommentsForLlm") {
-
     const { rawComments, maxComments } = request;
     chrome.storage.local.get(['commentMapper'], (result) => {
       const parsedComments = parseCommentsForLlm(rawComments, JSON.parse(result.commentMapper), maxComments);
