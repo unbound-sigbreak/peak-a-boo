@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reddit Peak-A-Boo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="main-window" class="visible">
+    <h1>Reddit Peak-A-Boo</h1>
+    <button id="manual-lookup">Manual Lookup</button>
+    <button id="rescan">Rescan Page</button>
+    <button id="settings-button">Settings</button>
+  </div>
+  <div id="settings-window" class="hidden">
+    <h2>Settings</h2>
+    <button id="reddit-settings-button">Reddit Settings</button>
+    <button id="api-settings-button">API Settings</button>
+    <button id="other-settings-button">Other</button>
+    <div id="reddit-settings" class="hidden"></div>
+    <div id="api-settings" class="hidden"></div>
+    <div id="other-settings" class="hidden"></div>
+    <button id="close-settings">Close Settings</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<div class="settings-container">
+  <h3>API Settings</h4>
+  <link rel="stylesheet" href="styles.css">
+  <input type="text" id="apiUrl" placeholder="Enter API URL">
+  <input type="text" id="apiKey" placeholder="Enter API Key">
+  <textarea id="llmPrompt" placeholder="Enter LLM Prompt"></textarea>
+  <textarea id="payloadObject" placeholder="Enter Payload Object"></textarea>
+  <h4>Request Headers</h4>
+  <div id="requestHeadersContainer">
+    <div class="headerPair">
+      <input type="text" class="headerKey" placeholder="Header Key">
+      <input type="text" class="headerValue" placeholder="Header Value">
+      <button class="removeHeader">X</button>
+    </div>
+  </div>
+  <button id="addHeader">Add Header</button>
+  <button id="save-api-setting" class="save-button">Save API Settings</button>
+</div>
