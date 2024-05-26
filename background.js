@@ -25,6 +25,23 @@ const escapeJSONString = (jsonString) => {
   return jsonString.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
 
+const extractValue = (obj, path) => {
+  const keys = path.split('.');
+  let value = obj;
+  for (let key of keys) {
+    const arrayMatch = key.match(/(\w+)\[(\d+)\]/);
+    if (arrayMatch) {
+      const arrayKey = arrayMatch[1];
+      const index = parseInt(arrayMatch[2], 10);
+      value = value[arrayKey] ? value[arrayKey][index] : undefined;
+    } else {
+      value = value[key];
+    }
+    if (value === undefined) break;
+  }
+  return value;
+};
+
 const parseCommentsForLlm = (rawCommentsData, mapperKeys, maxComments) => {
   if (!rawCommentsData?.data?.children) {
     return { comments: [], totalProcessed: 0 };
@@ -43,19 +60,7 @@ const parseCommentsForLlm = (rawCommentsData, mapperKeys, maxComments) => {
     let mappedObject = {};
 
     for (const [newKey, path] of Object.entries(mapperKeys)) {
-      const keys = path.split('.');
-      let value = comment;
-
-      for (let key of keys) {
-        if (value[key] !== undefined) {
-          value = value[key];
-        } else {
-          value = undefined;
-          break;
-        }
-      }
-
-      mappedObject[newKey] = value;
+      mappedObject[newKey] = extractValue(comment, path);
     }
 
     result.push(mappedObject);
@@ -89,9 +94,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 
   if (request.action === "parseCommentsForLlm") {
-    const { rawComments, maxComments } = request;
-    chrome.storage.local.get(['commentMapper'], (result) => {
-      const parsedComments = parseCommentsForLlm(rawComments, JSON.parse(result.commentMapper), maxComments);
+    const { rawComments } = request;
+    chrome.storage.local.get(['commentMapper', 'maxComments'], (result) => {
+      const parsedComments = parseCommentsForLlm(rawComments, JSON.parse(result.commentMapper), result.maxComments);
       sendResponse(parsedComments);
     });
     return true;
@@ -116,7 +121,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
           payload = JSON.parse(payloadString);
         } catch (e) {
-          console.error('Error parsing JSON payload:', e);
+          console.log('Error parsing JSON payload:', e);
           sendResponse({ error: 'Error parsing JSON payload' });
           return;
         }
@@ -133,15 +138,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })
         .then((response) => response.json())
         .then((data) => {
-          console.log('[Peak-A-Boo]: API call success', data);
           sendResponse({ success: true, data: data });
         })
         .catch((error) => {
-          console.error('Error:', error);
+          console.log('Error:', error);
           sendResponse({ success: false, error: error.message });
         });
       } else {
-        console.error('API URL is missing');
+        console.log('API URL is missing');
         sendResponse({ success: false, error: 'API URL is missing' });
       }
     });
@@ -162,11 +166,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })
       .then(response => response.json())
       .then(data => {
-        console.log('[Peak-A-Boo]: Reddit user data fetched', data);
+        // console.log('[Peak-A-Boo]: Reddit user data fetched', data);
         sendResponse({ success: true, data: data });
       })
       .catch(error => {
-        console.error('Error fetching Reddit user data:', error);
+        console.log('Error fetching Reddit user data:', error);
         sendResponse({ error: error.message });
       });
     });

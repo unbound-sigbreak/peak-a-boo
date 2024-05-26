@@ -1,0 +1,1 @@
+const r=(r,n,a="")=>{const o=Array.isArray(n);var t=o?/{#([1-9][0-9]*|n)}/g:/{\$([a-zA-Z_][a-zA-Z0-9_]*)}/g;let u=0;return r.replace(t,(r,t)=>{let e;return o?"n"===t?(e=n[u],u++):e=n[Number.parseInt(t,10)-1]:e=n[t],void 0!==e?e:!0===a?r:a})};export{r as interpolate};

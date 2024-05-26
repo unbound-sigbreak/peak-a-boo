@@ -1,13 +1,14 @@
 const defaultOllamaApiUrl = 'http://localhost.:11434/api/generate';
 const defaultOpenAiApiUrl = 'https://api.openai.com/v1/chat/completions';
 const defaultLlmPrompt = `Please review this user's Reddit comments and provide a summary of their behavior: {$commentJsonData}`;
-const defaultOllamaModel = "tinyllama";
+const defaultOllamaModel = "llama3";
 const defaultOpenAiModel = "gpt-3.5-turbo-0125";
 const defaultOllamPayloadObject = `{
   "model": "${defaultOllamaModel}",
   "prompt": "{$llmPrompt}",
   "stream": false
 }`;
+
 const defaultOpenAiPayloadObject = `{
   "model": "${defaultOpenAiModel}",
   "messages": [{"role": "user", "content": "{$llmPrompt}"}],
@@ -18,6 +19,9 @@ const defaultOpanAiHeaders = [
   { key: 'Authorization', value: 'Bearer {$apiKey}' },
   { key: 'Content-Type', value: 'application/json' }
 ];
+
+const defaultOpenAiResponsePath = 'choices[0].message.content';
+const defaultOllamaResponsePath = 'response';
 
 const defaultOllamaHeaders = [
   { key: 'Content-Type', value: 'application/json' }
@@ -42,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const otherSettingsButton = document.getElementById('other-settings-button');
   const closeSettingsButton = document.getElementById('close-settings');
 
-  manualLookupButton.addEventListener('click', () => {
+  manualLookupButton?.addEventListener('click', () => {
     alert('Manual Lookup clicked');
   });
 
@@ -107,7 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function initializeRedditSettings() {
     const saveRedditSettingsButton = document.getElementById('save-reddit-setting');
-    const commentMapperInput = document.getElementById('commentMapper');
 
     saveRedditSettingsButton.addEventListener('click', () => {
       saveRedditSettings();
@@ -127,6 +130,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     addHeaderButton.addEventListener('click', () => {
       addHeaderInput();
+    });
+
+    const apiKeyField = document.getElementById('apiKey');
+    apiKeyField.addEventListener('focus', function () {
+      apiKeyField.type = 'text';
+    });
+
+    apiKeyField.addEventListener('blur', function () {
+      apiKeyField.type = 'password';
     });
 
     loadSettings();
@@ -155,17 +167,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function loadSettings() {
     chrome.storage.local.get([
-      'redditSetting',
       'apiUrl',
       'apiKey',
+      'llmResponsePath',
       'llmPrompt',
       'payloadObject',
       'requestHeaders',
-      'commentMapper'
+      'commentMapper',
+      'maxComments'
     ], (result) => {
       const commentMapperInput = document.getElementById('commentMapper');
+      const maxCommentsInput = document.getElementById('maxComments');
       const apiUrlInput = document.getElementById('apiUrl');
       const apiKeyInput = document.getElementById('apiKey');
+      const llmResponseJsonPath = document.getElementById('llmResponseJsonPath');
       const llmPromptTextarea = document.getElementById('llmPrompt');
       const payloadObjectTextarea = document.getElementById('payloadObject');
       const requestHeadersContainer = document.getElementById('requestHeadersContainer');
@@ -174,12 +189,20 @@ document.addEventListener('DOMContentLoaded', () => {
         commentMapperInput.value = result.commentMapper;
       }
 
+      if (maxCommentsInput) {
+        maxCommentsInput.value = result.maxComments || '';
+      }
+
       if (apiUrlInput) {
         apiUrlInput.value = result.apiUrl;
       }
 
       if (apiKeyInput) {
         apiKeyInput.value = result.apiKey || '';
+      }
+
+      if (llmResponseJsonPath) {
+        llmResponseJsonPath.value = result.llmResponsePath || '';
       }
 
       if (llmPromptTextarea) {
@@ -210,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const defaultSettings = {
         ...commomSettings,
         apiUrl: defaultOllamaApiUrl,
+        llmResponsePath: defaultOllamaResponsePath,
         apiKey: '',
         payloadObject: defaultOllamPayloadObject,
         requestHeaders: defaultOllamaHeaders,
@@ -222,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const defaultSettings = {
         ...commomSettings,
         apiUrl: defaultOpenAiApiUrl,
+        llmResponsePath: defaultOpenAiResponsePath,
         apiKey: '',
         payloadObject: defaultOpenAiPayloadObject,
         requestHeaders: defaultOpanAiHeaders
@@ -236,6 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function saveApiSettings() {
     const apiUrl = document.getElementById('apiUrl').value;
     const apiKey = document.getElementById('apiKey').value;
+    const llmResponsePath = document.getElementById('llmResponseJsonPath').value;
     const llmPrompt = document.getElementById('llmPrompt').value;
     const payloadObject = document.getElementById('payloadObject').value;
     const requestHeaders = Array.from(document.getElementsByClassName('headerPair')).map(pair => ({
@@ -246,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.set({
       ...({ apiUrl } ? { apiUrl } : {}),
       ...({ apiKey } ? { apiKey } : {}),
+      ...({ llmResponsePath } ? { llmResponsePath } : {}),
       ...({ llmPrompt } ? { llmPrompt } : {}),
       ...({ payloadObject } ? { payloadObject } : {}),
       ...({ requestHeaders } ? { requestHeaders } : {})
@@ -256,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveRedditSettings() {
     const commentMapper = document.getElementById('commentMapper')?.value ?? null;
+    const maxComments = document.getElementById('maxComments')?.value ?? null;
 
     try {
       JSON.parse(commentMapper);
@@ -265,7 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     chrome.storage.local.set({
-      ...({ commentMapper } ? { commentMapper } : {})
+      ...({ commentMapper } ? { commentMapper } : {}),
+      ...({ maxComments } ? { maxComments } : {}),
     }, () => {
       alert('Reddit Settings saved');
     });

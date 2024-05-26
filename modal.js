@@ -2,15 +2,36 @@ let username = null;
 let rawComments = null;
 let parsedComments = null;
 
+const extractValue = (obj, path) => {
+  const keys = path.split('.');
+  let value = obj;
+  for (let key of keys) {
+    const arrayMatch = key.match(/(\w+)\[(\d+)\]/);
+    if (arrayMatch) {
+      const arrayKey = arrayMatch[1];
+      const index = parseInt(arrayMatch[2], 10);
+      value = value[arrayKey] ? value[arrayKey][index] : undefined;
+    } else {
+      value = value[key];
+    }
+    if (value === undefined) break;
+  }
+  return value;
+};
+
 window.onload = function() {
   const closeModalButton = document.getElementById('close-modal');
   const commentsRefresh = document.getElementById('comments-refresh');
   const commentsProcessed = document.getElementById('comments-processed-refresh');
   const showParsedCommentsButton = document.getElementById('show-parsed-comments');
+  const showLlmOutputButton = document.getElementById('show-raw-llm-output');
   const parsedCommentsWrapper = document.getElementById('parsed-comments-debug-wrapper');
+  const rawLlmDebugWrapper = document.getElementById('raw-llm-debug-wrapper');
   const llmResponseContent = document.getElementById('llm-response-data');
+  const llmDebugData = document.getElementById('raw-llm-debug');
 
   parsedCommentsWrapper.style.display = 'none';
+  rawLlmDebugWrapper.style.display = 'none';
 
   closeModalButton.onclick = () => {
     window.close();
@@ -23,6 +44,16 @@ window.onload = function() {
     } else {
       parsedCommentsWrapper.style.display = 'none';
       showParsedCommentsButton.innerText = 'Show Parsed Comments';
+    }
+  };
+  
+  showLlmOutputButton.onclick = () => {
+    if (rawLlmDebugWrapper.style.display === 'none' || rawLlmDebugWrapper.style.display === '') {
+      rawLlmDebugWrapper.style.display = 'block';
+      showLlmOutputButton.innerText = 'Hide raw LLM Output';
+    } else {
+      rawLlmDebugWrapper.style.display = 'none';
+      showLlmOutputButton.innerText = 'Show Raw LLM Output';
     }
   };
   
@@ -79,28 +110,32 @@ window.onload = function() {
   commentsProcessed.onclick = () => {
     document.getElementById('comments-processed-state').innerText = 'Loading';
     document.getElementById('comments-processed-refresh').style.display = 'none';
+    llmResponseContent.innerText = 'Waiting for LLM...';
 
-    chrome.runtime.sendMessage({
-      action: "performLlmApiCall",
-      content: {
-        username,
-        parsedComments: parsedComments
-      }
-    }, (response) => {
-      if (response?.success) {
-        document.getElementById('comments-processed-refresh').style.display = 'block';
-        if (response.data.error) {
-          console.log('API call response', response.data);
-          document.getElementById('comments-processed-state').innerText = 'Error';
-          llmResponseContent.innerText = JSON.stringify(response.data, null, 2);
-          return;
+    chrome.storage.local.get(['llmResponsePath'], (result) => {
+      chrome.runtime.sendMessage({
+        action: "performLlmApiCall",
+        content: {
+          username,
+          parsedComments: parsedComments
         }
-        document.getElementById('comments-processed-state').innerText = 'Yes';
-        llmResponseContent.innerText = JSON.stringify(response.data, null, 2);
-      } else {
-        document.getElementById('comments-processed-state').innerText = 'Error';
-        llmResponseContent.innerText = response.error;
-      }
+      }, (response) => {
+        if (response?.success) {
+          document.getElementById('comments-processed-refresh').style.display = 'block';
+          if (response.data.error) {
+            console.log('API call response', response.data);
+            document.getElementById('comments-processed-state').innerText = 'Error';
+            llmResponseContent.innerText = JSON.stringify(response.data, null, 2);
+            return;
+          }
+          document.getElementById('comments-processed-state').innerText = 'Yes';
+          llmResponseContent.innerText = extractValue(response.data, result.llmResponsePath);
+          llmDebugData.innerText = JSON.stringify(response.data, null, 2);
+        } else {
+          document.getElementById('comments-processed-state').innerText = 'Error';
+          llmResponseContent.innerText = response.error;
+        }
+      });
     });
   };
 };
