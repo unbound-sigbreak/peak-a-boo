@@ -4,6 +4,8 @@ rm -rf build
 mkdir -p build
 cp *.html build/
 cp *.css build/
+cp *.png build/
+cp manifest.json build/
 # uglifyjs script.js -o script.min.js -c -m --mangle-props
 
 for file in *.js; do
