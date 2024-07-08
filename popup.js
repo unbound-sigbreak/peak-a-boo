@@ -1,40 +1,3 @@
-const defaultOllamaApiUrl = 'http://localhost.:11434/api/generate';
-const defaultOpenAiApiUrl = 'https://api.openai.com/v1/chat/completions';
-const defaultLlmPrompt = `Please review this user's Reddit comments and provide a summary of their behavior: {$commentJsonData}`;
-const defaultOllamaModel = "llama3";
-const defaultOpenAiModel = "gpt-3.5-turbo-0125";
-const defaultOllamPayloadObject = `{
-  "model": "${defaultOllamaModel}",
-  "prompt": "{$llmPrompt}",
-  "stream": false
-}`;
-
-const defaultOpenAiPayloadObject = `{
-  "model": "${defaultOpenAiModel}",
-  "messages": [{"role": "user", "content": "{$llmPrompt}"}],
-  "temperature": 0.7
-}`;
-
-const defaultOpanAiHeaders = [
-  { key: 'Authorization', value: 'Bearer {$apiKey}' },
-  { key: 'Content-Type', value: 'application/json' }
-];
-
-const defaultOpenAiResponsePath = 'choices[0].message.content';
-const defaultOllamaResponsePath = 'response';
-
-const defaultOllamaHeaders = [
-  { key: 'Content-Type', value: 'application/json' }
-];
-
-const defaultCommentMapper = `{
-  "c": "data.body",
-  "subr": "data.subreddit",
-  "upvotes": "data.ups",
-  "threadtitle": "data.link_title",
-  "issubmitter": "data.is_submitter"
-}`;
-
 document.addEventListener('DOMContentLoaded', () => {
   const mainWindow = document.getElementById('main-window');
   const rescanButton = document.getElementById('rescan');
@@ -150,22 +113,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resetConfigsOpenAi.addEventListener('click', () => {
       chrome.storage.local.clear(() => {
-        saveDefaultSettings('openai');
-        loadSettings();
-        alert('Configs reset to OpenAI defaults');
+        chrome.runtime.sendMessage({
+          action: "resetSettings",
+            configDefault: 'oolama'
+        },
+        () => {
+          loadSettings();
+          alert('Configs reset to OpenAI defaults');
+        });
       });
     });
 
     resetConfigsOllama.addEventListener('click', () => {
       chrome.storage.local.clear(() => {
-        saveDefaultSettings('ollama');
-        loadSettings();
-        alert('Configs reset to Ollama defaults');
+        chrome.runtime.sendMessage({
+          action: "resetSettings",
+          configDefault: 'oolama'
+        },
+        () => {
+          loadSettings();
+          alert('Configs reset to Ollama defaults');
+        });
       });
     });
   }
 
-  function loadSettings() {
+  const loadSettings = () => {
     chrome.storage.local.get([
       'apiUrl',
       'apiKey',
@@ -221,41 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
     });
-  }
-
-  function saveDefaultSettings(configDefault) {
-    const commomSettings = {
-      commentMapper: defaultCommentMapper,
-      llmPrompt: defaultLlmPrompt
-    };
-
-    if (configDefault === 'ollama') {
-      const defaultSettings = {
-        ...commomSettings,
-        apiUrl: defaultOllamaApiUrl,
-        llmResponsePath: defaultOllamaResponsePath,
-        apiKey: '',
-        payloadObject: defaultOllamPayloadObject,
-        requestHeaders: defaultOllamaHeaders,
-      };
-
-      chrome.storage.local.set(defaultSettings, () => {
-        console.log('Default Ollama settings saved');
-      });
-    } else if (configDefault === 'openai') {
-      const defaultSettings = {
-        ...commomSettings,
-        apiUrl: defaultOpenAiApiUrl,
-        llmResponsePath: defaultOpenAiResponsePath,
-        apiKey: '',
-        payloadObject: defaultOpenAiPayloadObject,
-        requestHeaders: defaultOpanAiHeaders
-      };
-
-      chrome.storage.local.set(defaultSettings, () => {
-        console.log('Default OpenAI settings saved');
-      });
-    }
   }
 
   function saveApiSettings() {

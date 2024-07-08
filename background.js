@@ -1,7 +1,61 @@
+const __VERSION = 1;
 import { interpolate } from "./interpolate.js";
+
+const defaultOllamaApiUrl = 'http://localhost.:11434/api/generate';
+const defaultOpenAiApiUrl = 'https://api.openai.com/v1/chat/completions';
+const defaultLlmPrompt = `Please review this user's Reddit comments and provide a summary of their behavior: {$commentJsonData}`;
+const defaultOllamaModel = "llama3";
+const defaultOpenAiModel = "gpt-3.5-turbo-0125";
+const defaultOllamPayloadObject = `{
+  "model": "${defaultOllamaModel}",
+  "prompt": "{$llmPrompt}",
+  "stream": false
+}`;
+
+const defaultOpenAiPayloadObject = `{
+  "model": "${defaultOpenAiModel}",
+  "messages": [{"role": "user", "content": "{$llmPrompt}"}],
+  "temperature": 0.7
+}`;
+
+const defaultOpanAiHeaders = [
+  { key: 'Authorization', value: 'Bearer {$apiKey}' },
+  { key: 'Content-Type', value: 'application/json' }
+];
+
+const defaultOpenAiResponsePath = 'choices[0].message.content';
+const defaultOllamaResponsePath = 'response';
+
+const defaultOllamaHeaders = [
+  { key: 'Content-Type', value: 'application/json' }
+];
+
+const defaultCommentMapper = `{
+  "c": "data.body",
+  "subr": "data.subreddit",
+  "upvotes": "data.ups",
+  "threadtitle": "data.link_title",
+  "issubmitter": "data.is_submitter"
+}`;
+
 
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Reddit Peak-A-Boo installed');
+  
+  chrome.storage.local.get(['initialised', 'version'], (result) => {
+    if ((!result?.initialised ?? false) || Number.parseInt(result?.version ?? 0) < __VERSION) {
+      if ((!result?.initialised ?? false)) {
+        console.log("First install");
+      }
+
+      saveDefaultSettings('openai');
+      console.log('Default OpenAI settings saved');
+      chrome.storage.local.set({ initialised: true, version: __VERSION }, () => {
+        console.log(`Initialised plugin. Version set to ${__VERSION}`);
+      });
+      console.log('Settings initialised to OpenAI');
+    }
+  });
 });
 
 function getTabWithUrl(url) {
@@ -70,6 +124,41 @@ const parseCommentsForLlm = (rawCommentsData, mapperKeys, maxComments) => {
   return { comments: result, totalProcessed };
 };
 
+const saveDefaultSettings = (configDefault) => {
+  const commomSettings = {
+    commentMapper: defaultCommentMapper,
+    llmPrompt: defaultLlmPrompt
+  };
+
+  if (configDefault === 'ollama') {
+    const defaultSettings = {
+      ...commomSettings,
+      apiUrl: defaultOllamaApiUrl,
+      llmResponsePath: defaultOllamaResponsePath,
+      apiKey: '',
+      payloadObject: defaultOllamPayloadObject,
+      requestHeaders: defaultOllamaHeaders,
+    };
+
+    chrome.storage.local.set(defaultSettings, () => {
+      console.log('Default Ollama settings saved');
+    });
+  } else if (configDefault === 'openai') {
+    const defaultSettings = {
+      ...commomSettings,
+      apiUrl: defaultOpenAiApiUrl,
+      llmResponsePath: defaultOpenAiResponsePath,
+      apiKey: '',
+      payloadObject: defaultOpenAiPayloadObject,
+      requestHeaders: defaultOpanAiHeaders
+    };
+
+    chrome.storage.local.set(defaultSettings, () => {
+      console.log('Default OpenAI settings saved');
+    });
+  }
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "sendRawCommentContentToModal") {
     getTabWithUrl(`modal.html?username=${request.content.username}`).then((modalWindow) => {
@@ -80,6 +169,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }).catch((err) => {
       console.log('tab not found', err);
     });
+  }
+
+  if (request.action === "resetSettings") {
+    saveDefaultSettings(request?.configDefault);
   }
 
   if (request.action === "sendParsedCommentContentToModal") {

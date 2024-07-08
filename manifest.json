@@ -5,7 +5,6 @@
   "description": "LLM UI for Reddit Moderators",
   "permissions": [
     "activeTab",
-    "scripting",
     "storage",
     "cookies",
     "tabs"
@@ -17,7 +16,11 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "host_permissions": ["https://*/", "http://*/"],
+  "host_permissions": [
+    "https://*/*",
+    "http://localhost/*",
+    "http://*.lan/*"
+  ],
   "action": {
     "default_popup": "popup.html"
   },
