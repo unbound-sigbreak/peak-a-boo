@@ -1,3 +1,4 @@
+const __PREFIX = '[Reddit-Peak-A-Boo]: ';
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'llmButtonInjectRescan') {
     removeButtonElements();
@@ -37,16 +38,16 @@ const injectButtonElements = () => {
             buttonsInjected++;
           }
         } else {
-          consoleOut.push('[Peak-A-Boo]: Could not find faceplate-tracker');
+          consoleOut.push(`${__PREFIX} Could not find faceplate-tracker`);
         }
       } else {
-        consoleOut.push('[Peak-A-Boo]: Could not find nested div');
+        consoleOut.push(`${__PREFIX} Could not find nested div`);
       }
     });
-    consoleOut.push(`[Peak-A-Boo]: Buttons Injected: '${buttonsInjected}'`);
+    consoleOut.push(`${__PREFIX} Buttons Injected: '${buttonsInjected}'`);
 
   } else {
-    consoleOut.push('[Peak-A-Boo]: Not on a Reddit page');
+    consoleOut.push(`${__PREFIX} Not on a Reddit page`);
   }
 
   return consoleOut;
@@ -68,7 +69,7 @@ const onLlmButtonClick = (username) => {
   // };
   const errorList = [];
 
-  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=1200,height=800');
+  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=900,height=600');
   chrome.runtime.sendMessage({
     action: "fetchRedditUserData",
     username: username
@@ -81,7 +82,7 @@ const onLlmButtonClick = (username) => {
         if (typeof response.data === 'object') {
           jsonComments = response.data;
         } else {
-          errorList.push('Error parsing comment JSON data');
+          errorList.push(`${__PREFIX} (fetchRedditUserData) Error parsing comment JSON data`);
         }
       }
       updateJsonScriptTag(username, jsonComments, 'rawComments');
@@ -114,13 +115,25 @@ const onLlmButtonClick = (username) => {
         }
       );
     } else {
-      console.error('[Peak-A-Boo]: Error fetching user data', response?.error);
+      console.error(`${__PREFIX} (parseCommentsForLlm) Error fetching user data`, response?.error);
     }
   });
 }
 
 window.addEventListener('load', () => {
-  injectButtonElements();
+  setTimeout(() => {
+    console.log(injectButtonElements());
+    window.addEventListener('click', (event) => { // Reinject on relative routes
+      const targetTagName = event.target.tagName.toLowerCase();
+      const currentButtons = document.querySelectorAll('.peak-a-boo-llm-button');
+      if (currentButtons.length < 1 && ['a', 'time', 'main', 'p', 'span'].includes(targetTagName)) {
+        setTimeout(() => {
+          removeButtonElements();
+          console.log(injectButtonElements());
+        }, 500);
+      }
+  }, true);
+  }, 500);
 });
 
 function updateJsonScriptTag(username, userData, key) {

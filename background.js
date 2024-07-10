@@ -42,7 +42,7 @@ const defaultCommentMapper = `{
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Reddit Peak-A-Boo installed');
   
-  chrome.storage.local.get(['initialised', 'version'], (result) => {
+  chrome.storage.sync.get(['initialised', 'version'], (result) => {
     if ((!result?.initialised ?? false) || Number.parseInt(result?.version ?? 0) < __VERSION) {
       if ((!result?.initialised ?? false)) {
         console.log("First install");
@@ -50,7 +50,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
       saveDefaultSettings('openai');
       console.log('Default OpenAI settings saved');
-      chrome.storage.local.set({ initialised: true, version: __VERSION }, () => {
+      chrome.storage.sync.set({ initialised: true, version: __VERSION }, () => {
         console.log(`Initialised plugin. Version set to ${__VERSION}`);
       });
       console.log('Settings initialised to OpenAI');
@@ -58,7 +58,7 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-function getTabWithUrl(url) {
+const getTabWithUrl = (url) => {
   return new Promise((resolve, reject) => {
     chrome.tabs.query({}, (tabs) => {
       let tab = tabs.find(tab => tab.url?.endsWith(url));
@@ -129,7 +129,7 @@ const saveDefaultSettings = (configDefault) => {
     commentMapper: defaultCommentMapper,
     llmPrompt: defaultLlmPrompt
   };
-
+  
   if (configDefault === 'ollama') {
     const defaultSettings = {
       ...commomSettings,
@@ -138,9 +138,11 @@ const saveDefaultSettings = (configDefault) => {
       apiKey: '',
       payloadObject: defaultOllamPayloadObject,
       requestHeaders: defaultOllamaHeaders,
+      version: __VERSION,
+      initialised: true
     };
 
-    chrome.storage.local.set(defaultSettings, () => {
+    chrome.storage.sync.set(defaultSettings, () => {
       console.log('Default Ollama settings saved');
     });
   } else if (configDefault === 'openai') {
@@ -153,9 +155,11 @@ const saveDefaultSettings = (configDefault) => {
       requestHeaders: defaultOpanAiHeaders
     };
 
-    chrome.storage.local.set(defaultSettings, () => {
+    chrome.storage.sync.set(defaultSettings, () => {
       console.log('Default OpenAI settings saved');
     });
+  } else {
+    console.log(`Unknown config: ${configDefault}`);
   }
 }
 
@@ -188,15 +192,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "parseCommentsForLlm") {
     const { rawComments } = request;
-    chrome.storage.local.get(['commentMapper', 'maxComments'], (result) => {
-      const parsedComments = parseCommentsForLlm(rawComments, JSON.parse(result.commentMapper), result.maxComments);
+    chrome.storage.sync.get(['commentMapper', 'maxComments'], (result) => {
+      const parsedComments = parseCommentsForLlm(rawComments, JSON.parse(result.commentMapper), result?.maxComments ?? -1);
       sendResponse(parsedComments);
     });
     return true;
   }
 
   if (request.action === "getSettings") {
-    chrome.storage.local.get(['apiUrl', 'llmPrompt', 'payloadObject', 'requestHeaders'], (result) => {
+    chrome.storage.sync.get(['apiUrl', 'llmPrompt', 'payloadObject', 'requestHeaders'], (result) => {
       sendResponse(result);
     });
     return true;
@@ -204,7 +208,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
   if (request.action === "performLlmApiCall") {
     const { username, parsedComments } = request?.content ?? {};
-    chrome.storage.local.get(['apiUrl', 'llmPrompt', 'payloadObject', 'requestHeaders', 'apiKey'], (result) => {
+    chrome.storage.sync.get(['apiUrl', 'llmPrompt', 'payloadObject', 'requestHeaders', 'apiKey'], (result) => {
       const { apiUrl, llmPrompt, payloadObject, requestHeaders } = result;
 
       if (apiUrl) {

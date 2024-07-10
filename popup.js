@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleSection('other-settings', 'other-settings.html');
   });
 
-  function toggleSection(sectionId, htmlFile) {
+  const toggleSection = (sectionId, htmlFile) => {
     const allSectionIds = ['reddit-settings', 'api-settings', 'other-settings'];
     const section = document.getElementById(sectionId);
     for (const id of allSectionIds) {
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function loadHtml(element, htmlFile) {
+  const loadHtml = (element, htmlFile) => {
     fetch(htmlFile)
       .then(response => response.text())
       .then(data => {
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
 
-  function initializeRedditSettings() {
+  const initializeRedditSettings = () => {
     const saveRedditSettingsButton = document.getElementById('save-reddit-setting');
 
     saveRedditSettingsButton.addEventListener('click', () => {
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadSettings();
   }
 
-  function initializeApiSettings() {
+  const initializeApiSettings = () => {
     const saveApiSettingsButton = document.getElementById('save-api-setting');
     const addHeaderButton = document.getElementById('addHeader');
     const requestHeadersContainer = document.getElementById('requestHeadersContainer');
@@ -105,17 +105,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     loadSettings();
-  }
+  };
 
-  function initializeOtherSettings() {
+  const initializeOtherSettings = () => {
     const resetConfigsOpenAi = document.getElementById('clear-storage-openai');
     const resetConfigsOllama = document.getElementById('clear-storage-ollama');
 
     resetConfigsOpenAi.addEventListener('click', () => {
-      chrome.storage.local.clear(() => {
+      chrome.storage.sync.clear(() => {
         chrome.runtime.sendMessage({
           action: "resetSettings",
-            configDefault: 'oolama'
+            configDefault: 'ollama'
         },
         () => {
           loadSettings();
@@ -125,10 +125,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     resetConfigsOllama.addEventListener('click', () => {
-      chrome.storage.local.clear(() => {
+      chrome.storage.sync.clear(() => {
         chrome.runtime.sendMessage({
           action: "resetSettings",
-          configDefault: 'oolama'
+          configDefault: 'ollama'
         },
         () => {
           loadSettings();
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const loadSettings = () => {
-    chrome.storage.local.get([
+    chrome.storage.sync.get([
       'apiUrl',
       'apiKey',
       'llmResponsePath',
@@ -147,7 +147,9 @@ document.addEventListener('DOMContentLoaded', () => {
       'payloadObject',
       'requestHeaders',
       'commentMapper',
-      'maxComments'
+      'maxComments',
+      'initialised',
+      'version'
     ], (result) => {
       const commentMapperInput = document.getElementById('commentMapper');
       const maxCommentsInput = document.getElementById('maxComments');
@@ -196,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function saveApiSettings() {
+  const saveApiSettings = () => {
     const apiUrl = document.getElementById('apiUrl').value;
     const apiKey = document.getElementById('apiKey').value;
     const llmResponsePath = document.getElementById('llmResponseJsonPath').value;
@@ -207,7 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
       value: pair.querySelector('.headerValue').value
     }));
 
-    chrome.storage.local.set({
+    chrome.storage.sync.set({
       ...({ apiUrl } ? { apiUrl } : {}),
       ...({ apiKey } ? { apiKey } : {}),
       ...({ llmResponsePath } ? { llmResponsePath } : {}),
@@ -219,7 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function saveRedditSettings() {
+  const saveRedditSettings = () => {
     const commentMapper = document.getElementById('commentMapper')?.value ?? null;
     const maxComments = document.getElementById('maxComments')?.value ?? null;
 
@@ -230,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    chrome.storage.local.set({
+    chrome.storage.sync.set({
       ...({ commentMapper } ? { commentMapper } : {}),
       ...({ maxComments } ? { maxComments } : {}),
     }, () => {
@@ -238,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  function addHeaderInput(key = '', value = '') {
+  const addHeaderInput = (key = '', value = '') => {
     const headerPair = document.createElement('div');
     headerPair.classList.add('headerPair');
     headerPair.innerHTML = `

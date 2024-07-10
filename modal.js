@@ -1,6 +1,7 @@
 let username = null;
 let rawComments = null;
 let parsedComments = null;
+let usernameLabel = null;
 
 const extractValue = (obj, path) => {
   const keys = path.split('.');
@@ -19,7 +20,12 @@ const extractValue = (obj, path) => {
   return value;
 };
 
-window.onload = function() {
+const getQueryParam = (param) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(param);
+}
+
+window.onload = () => {
   const closeModalButton = document.getElementById('close-modal');
   const commentsRefresh = document.getElementById('comments-refresh');
   const commentsProcessed = document.getElementById('comments-processed-refresh');
@@ -29,6 +35,7 @@ window.onload = function() {
   const rawLlmDebugWrapper = document.getElementById('raw-llm-debug-wrapper');
   const llmResponseContent = document.getElementById('llm-response-data');
   const llmDebugData = document.getElementById('raw-llm-debug');
+  usernameLabel = document.getElementById('username');
 
   parsedCommentsWrapper.style.display = 'none';
   rawLlmDebugWrapper.style.display = 'none';
@@ -112,7 +119,7 @@ window.onload = function() {
     document.getElementById('comments-processed-refresh').style.display = 'none';
     llmResponseContent.innerText = 'Waiting for LLM...';
 
-    chrome.storage.local.get(['llmResponsePath'], (result) => {
+    chrome.storage.sync.get(['llmResponsePath'], (result) => {
       chrome.runtime.sendMessage({
         action: "performLlmApiCall",
         content: {
@@ -147,6 +154,7 @@ chrome.runtime.onMessage.addListener((data, sender) => {
     document.getElementById('comments-processed-refresh').style.display = 'none';
     document.getElementById('comments-retrieved-state').innerText = 'Yes';
     document.getElementById('comments-parsed-state').innerText = 'Loading';
+    usernameLabel.innerText ? usernameLabel.innerText = username : () => {};
     return true;
   }
 
@@ -158,6 +166,7 @@ chrome.runtime.onMessage.addListener((data, sender) => {
     if (parsedComments.length > 1) {
       document.getElementById('comments-processed-refresh').style.display = 'block';
       document.getElementById('comments-parsed-state').innerText = 'Yes';
+      usernameLabel.innerText ? usernameLabel.innerText = username : () => {};
     }
     return true;
   }

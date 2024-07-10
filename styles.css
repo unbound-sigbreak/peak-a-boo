@@ -6,6 +6,7 @@ body {
 }
 
 button {
+  border-radius: 8px;
   background-color: #1E88E5;
   border-color: #424242;
   color: #FFFFFF;
@@ -85,11 +86,35 @@ h4 {
   height: 100%;
   overflow: auto;
   background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
+  background-color: #121212;
+  color: #FFFFFF;
+}
+
+.modal button {
+  font-size: 12px;
+  background-color: #43A047;
+}
+
+.modal button:hover {
+  background-color: #66BB6A;
+}
+
+.debug {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.debug button {
+  font-size: 12px;
+  background-color: #1E88E5;
+}
+
+.debug button:hover {
+  background-color: #42A5F5;
 }
 
 .modal-content {
-  background-color: #fefefe;
   margin: 40px;
   padding: 20px;
   border: 1px solid #888;
@@ -124,6 +149,12 @@ td {
 }
 .state-cell {
   width: 75px;
+}
+
+#refresh-button-cell {
+  padding-top: 16px;
+  vertical-align: middle;
+  text-align: center;
 }
 
 #rescan,.save-button {
