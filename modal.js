@@ -31,6 +31,7 @@ window.onload = () => {
   const commentsProcessed = document.getElementById('comments-processed-refresh');
   const showParsedCommentsButton = document.getElementById('show-parsed-comments');
   const showLlmOutputButton = document.getElementById('show-raw-llm-output');
+  const copyLlmPromptButton = document.getElementById('copy-llm-prompt');
   const parsedCommentsWrapper = document.getElementById('parsed-comments-debug-wrapper');
   const rawLlmDebugWrapper = document.getElementById('raw-llm-debug-wrapper');
   const llmResponseContent = document.getElementById('llm-response-data');
@@ -63,7 +64,7 @@ window.onload = () => {
       showLlmOutputButton.innerText = 'Show Raw LLM Output';
     }
   };
-  
+
   commentsRefresh.onclick = () => {
     const errorList = [];
     document.getElementById('comments-retrieved-state').innerText = 'Loading';
@@ -114,6 +115,28 @@ window.onload = () => {
     });
   };
 
+  // getLlmPromptWithComments
+  copyLlmPromptButton.onclick = () => {
+    chrome.runtime.sendMessage({
+      action: "getLlmPromptWithComments",
+      content: {
+        username,
+        parsedComments: parsedComments
+      }
+    }, (response) => {
+      if (response?.success) {
+        navigator.clipboard.writeText(response?.data).then(() => {
+
+        }, () => {
+
+        });
+      } else {
+        document.getElementById('comments-processed-state').innerText = 'Error';
+        llmResponseContent.innerText = response?.error;
+      }
+    });
+  };
+  
   commentsProcessed.onclick = () => {
     document.getElementById('comments-processed-state').innerText = 'Loading';
     document.getElementById('comments-processed-refresh').style.display = 'none';

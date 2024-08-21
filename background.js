@@ -206,6 +206,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
+  if (request.action === "getLlmPromptWithComments") {
+    const { username, parsedComments } = request?.content ?? {};
+    chrome.storage.sync.get(['llmPrompt', 'payloadObject'], (result) => {
+      const { llmPrompt } = result;
+      const llmPromptInterpolated = interpolate(llmPrompt, { commentJsonData: escapeJSONString(JSON.stringify(parsedComments, null, 0)), username });
+      sendResponse({ success: true, data: llmPromptInterpolated });
+    });
+    return true;
+  }
+  
   if (request.action === "performLlmApiCall") {
     const { username, parsedComments } = request?.content ?? {};
     chrome.storage.sync.get(['apiUrl', 'llmPrompt', 'payloadObject', 'requestHeaders', 'apiKey'], (result) => {

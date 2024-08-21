@@ -59,17 +59,9 @@ const removeButtonElements = () => {
 };
 
 const onLlmButtonClick = (username) => {
-    // button.onclick = () => {
-  //   chrome.runtime.sendMessage({
-  //     action: "performLlmApiCall",
-  //     username: username
-  //   }, (response) => {
-  //     console.log('[Peak-A-Boo]: Response from background script', response);
-  //   });
-  // };
   const errorList = [];
 
-  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=900,height=600');
+  const modalWindow = window.open(chrome.runtime.getURL(`modal.html?username=${username}`), `Peak-A-Boo ${username}`, 'width=1000,height=600');
   chrome.runtime.sendMessage({
     action: "fetchRedditUserData",
     username: username

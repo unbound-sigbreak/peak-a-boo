@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Reddit PeakABoo",
-  "version": "1.0",
+  "version": "1.02",
   "description": "LLM UI for Reddit Moderators",
   "permissions": [
     "activeTab",
